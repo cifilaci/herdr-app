@@ -328,6 +328,7 @@ export function menuSize(items, start = false) {
   let seps = 0;
   let longest = 0;
   let keys = 0;
+  let badges = false;
   for (const it of items) {
     if (it.sep) {
       seps++;
@@ -336,9 +337,11 @@ export function menuSize(items, start = false) {
     rows++;
     longest = Math.max(longest, plain(it.label).length);
     keys = Math.max(keys, (it.shortcut ?? "").length);
+    if (it.badge) badges = true;
   }
   const row = start ? MENU.startRow : MENU.row;
-  const w = start ? Math.max(180, MENU.banner + 48 + longest * 6 + 24) : Math.max(120, 28 + longest * 6 + (keys ? keys * 6 + 24 : 0) + 20);
+  // A badge column (a 9 px icon and a 6 px gutter) only when a row carries one.
+  const w = start ? Math.max(180, MENU.banner + 48 + longest * 6 + 24) : Math.max(120, 28 + longest * 6 + (keys ? keys * 6 + 24 : 0) + 20 + (badges ? 15 : 0));
   const h = rows * row + seps * MENU.sep + MENU.frame * 2;
   return { w, h };
 }

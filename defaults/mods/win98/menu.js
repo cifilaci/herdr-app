@@ -171,6 +171,7 @@ export default class Menu {
       })
       .child(lead)
       .child(div().flex_1().min_w(0).child(label(it.label, { bold: it.bold })))
+      .when(Boolean(it.badge), (el) => el.child(div().flex_none().pl(u(6)).child(icon(u, it.badge, 9))))
       .when(Boolean(it.shortcut), (el) => el.child(div().flex_none().pl(u(16)).child(it.shortcut)))
       .child(
         div()

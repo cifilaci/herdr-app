@@ -998,3 +998,33 @@ fn status_bar_shows_the_real_palette_key(cx: &mut TestAppContext) {
     assert!(tree.contains("commands"), "unbound hint still offers commands: {tree}");
     assert!(!tree.contains("Shift P"), "unbound hint must not invent a key: {tree}");
 }
+
+#[gpui::test]
+fn a_win98_menu_row_shows_its_badge(cx: &mut TestAppContext) {
+    cx.update(gpui_shell::init);
+    let staged = Staged::new();
+    let with = describe(
+        cx,
+        &staged,
+        "mods/win98",
+        true,
+        json!({"role":"menu","overlay":"o1","parents":[],"items":[{"label":"proj-a","badge":"warn-badge"},{"label":"proj-b"}]}),
+        updates("current","current"),
+        None,
+    )
+    .unwrap();
+    assert!(with.contains("mods/win98/icons/warn-badge-xs.svg"), "the badge must be drawn: {with}");
+    assert!(with.contains("proj-b"), "the rows must survive: {with}");
+
+    let without = describe(
+        cx,
+        &staged,
+        "mods/win98",
+        true,
+        json!({"role":"menu","overlay":"o1","parents":[],"items":[{"label":"proj-a"},{"label":"proj-b"}]}),
+        updates("current","current"),
+        None,
+    )
+    .unwrap();
+    assert!(!without.contains("warn-badge"), "a menu without badges must not gain one: {without}");
+}
