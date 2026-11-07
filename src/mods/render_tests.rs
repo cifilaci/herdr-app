@@ -962,6 +962,21 @@ fn shipped_layouts_and_keys() {
     }
 }
 
+#[test]
+fn the_win98_desktops_icon_is_generated_at_both_sizes() {
+    for (name, size) in [("desktops-sm.svg", 16), ("desktops.svg", 32)] {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("defaults/mods/win98/icons")
+            .join(name);
+        let text = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("{name}: {e}"));
+        assert!(
+            text.contains(&format!("viewBox=\"0 0 {size} {size}\"")),
+            "{name} must be a {size}px icon: {text}"
+        );
+    }
+}
+
 #[gpui::test]
 fn picker_scrolls_the_selection_into_view(cx: &mut TestAppContext) {
     cx.update(gpui_shell::init);

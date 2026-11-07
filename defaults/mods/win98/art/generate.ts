@@ -47,6 +47,8 @@ function icon(name:string,n:number){const p=new Pix(n),z=n===32?2:1;
  const monitor=(colors=false)=>{box(2,1,12,10,'e');r(3,2,10,7,'K');r(4,3,8,5,'a');if(colors){r(4,3,4,2,'R');r(8,3,4,2,'G');r(4,5,4,3,'b');r(8,5,4,3,'Y');}else{ln(4,7,10,3,'t');}r(7,11,3,2,'s');box(4,13,9,2,'e');};
  const globe=()=>{ell(8,7,6,6,'K');ell(7.5,6.5,5.5,5.5,'b');ell(7,6,4,5,'t');poly([[5,3],[8,3],[9,5],[7,6],[7,8],[4,7]],'g');poly([[9,8],[12,6],[12,9],[10,11],[8,10]],'g');ln(3,6,12,6,'n');ln(7,2,7,11,'n');};
  const speaker=()=>{r(1,6,4,5,'K');r(2,7,3,3,'c');poly([[4,6],[9,2],[10,2],[10,14],[9,14],[4,10]],'K');poly([[5,6],[9,3],[9,12],[5,10]],'s');ln(5,6,8,4,'W');ln(12,5,13,6,'K');ln(13,6,13,9,'K');ln(12,10,13,9,'K');};
+ // A miniature Herdr 98 screen: teal panel, navy title bar, grey taskbar.
+ const screen=(x:number,y:number,w:number,h:number)=>{box(x,y,w,h,'a');r(x+1,y+1,w-2,1,'n');r(x+1,y+h-2,w-2,1,'c');};
  switch(name){
  case 'start':logo(p);break;
  case 'folder':folder();break;case 'folder-open':folder(true);break;
@@ -69,6 +71,7 @@ function icon(name:string,n:number){const p=new Pix(n),z=n===32?2:1;
  case 'run':box(4,2,11,8,'W');r(5,3,9,1,'n');poly([[0,8],[5,5],[5,7],[10,7],[10,10],[5,10],[5,12]],'K');poly([[1,8],[4,6],[4,8],[9,8],[9,9],[4,9],[4,11]],'Y');break;
  case 'logoff':box(7,1,7,14,'r');poly([[9,2],[13,3],[13,13],[9,14]],'y');ell(4,7,3,3,'K');ell(4,7,2,2,'Y');ell(4,7,1,1,'K');r(6,7,7,2,'Y');r(10,9,1,2,'Y');r(12,9,1,2,'Y');break;
  case 'taskbar':box(0,2,16,12,'a');r(1,11,14,2,'c');box(1,11,4,2,'c');r(2,11,1,1,'G');box(6,11,6,2,'c');r(1,3,14,1,'n');break;
+ case 'desktops':screen(0,0,10,8);screen(5,6,11,10);r(7,14,1,1,'G');break;
  case 'drive':case 'netdrive':poly([[3,3],[13,3],[15,8],[15,12],[1,12],[1,8]],'K');poly([[4,4],[12,4],[14,8],[2,8]],'l');r(2,9,12,2,'c');r(3,10,5,0.5,'K');r(12,10,1,1,'g');if(name==='netdrive'){ln(1,15,14,15,'K');r(7,12,2,3,'s');r(2,14,2,1,'W');}break;
  case 'printer':box(4,0,8,8,'W');ln(5,2,10,2,'n');ln(5,4,10,4,'n');box(1,6,14,7,'c');r(2,7,12,2,'l');r(12,8,1,1,'g');r(4,11,8,4,'K');r(5,11,6,4,'W');ln(6,13,9,13,'s');break;
  case 'warning':case 'warn-badge':poly([[8,0],[16,15],[0,15]],'K');poly([[8,2],[14,14],[2,14]],'Y');r(7,5,2,5,'K');r(7,12,2,1,'K');break;
@@ -98,7 +101,7 @@ function icon(name:string,n:number){const p=new Pix(n),z=n===32?2:1;
  if(n===32){const art=p.a.map(row=>[...row]);for(let y=0;y<30;y++)for(let x=0;x<31;x++)if(art[y][x]&&!p.a[y+2][x+1])p.a[y+2][x+1]=(x+y)%2?'#80808066':'#00000033';}
  return p;
 }
-const names=['start','dos','folder','folder-open','netfolder','computer','bin','network','mines','sol','clippy','programs','documents','settings','find','help','run','logoff','shutdown','update','control','display','taskbar','drive','netdrive','printer','warning','question','info','error','rename','clock','taskman','speaker','speaker-mute'];
+const names=['start','dos','folder','folder-open','netfolder','computer','bin','network','mines','sol','clippy','programs','documents','settings','find','help','run','logoff','shutdown','update','control','display','taskbar','desktops','drive','netdrive','printer','warning','question','info','error','rename','clock','taskman','speaker','speaker-mute'];
 for(const name of names)for(const n of [16,32])writeFileSync(`${base}/icons/${name}${n===16?'-sm':''}.svg`,icon(name,n).svg());
 for(const name of ['hourglass','check-badge','warn-badge']){writeFileSync(`${base}/icons/${name}-sm.svg`,icon(name,16).svg());const p=new Pix(9);p.ascii(({hourglass:['.KKKKKKK.','..KWWWK..','..KYYYK..','...KWK...','....K....','...KYK...','..KYYYK..','..KYYYK..','.KKKKKKK.'],'check-badge':['.........','.......g.','......gg.','.g...gg..','.gg.gg...','..ggg....','...g.....','.........','.........'],'warn-badge':['....K....','...KYK...','...KYK...','..KYYYK..','..KYKYK..','.KYYKYYK.','.KYYYYYK.','KYYYKYYYK','KKKKKKKKK']} as any)[name]);writeFileSync(`${base}/icons/${name}-xs.svg`,p.svg());}
 const controls:Record<string,string[]>={
