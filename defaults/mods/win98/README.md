@@ -17,9 +17,11 @@ Properties (`win98.display`), F5 Shut Down (`win98.shutdown`), F6 Log Off
 (`win98.logoff`), F7 the date and time (`win98.datetime`), F8 Mines
 (`win98.mines`), F9 Solitaire (`win98.sol`), F10 My Computer
 (`win98.mycomputer`), F11 the small fonts (`win98.small_fonts`) and F12 the
-large ones (`win98.large_fonts`). The other commands (new tab, new space,
-rename, close) keep the app's global chords; the Start menu and the
-taskbar's tab and space menus still reach them.
+large ones (`win98.large_fonts`). The other commands keep the app's global
+chords where it has them: new tab (ctrl+shift+t), new space (ctrl+shift+n),
+rename tab (f2), rename space (shift+f2) and close tab (ctrl+shift+w).
+There is no global chord for closing a space — the space icon's menu on the
+desktop reaches it.
 
 The taskbar carries a virtual-desktop switcher: the button beside Start and
 the icon in the notification area both open the same list, above the control

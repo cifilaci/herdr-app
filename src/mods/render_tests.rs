@@ -993,15 +993,29 @@ fn shipped_layouts_and_keys() {
     // load_text replaces a user's file with the new defaults only when it is
     // byte-identical to an original.
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    for (originals, name) in [
-        (crate::keys::SHIPPED_KEYS, "v0.1.13-keys.json"),
-        (crate::keys::SHIPPED_MACOS_KEYS, "v0.1.13-keys.macos.json"),
+    for (originals, name, defaults) in [
+        (
+            crate::keys::SHIPPED_KEYS,
+            "v0.1.13-keys.json",
+            include_str!("../../defaults/keys.json"),
+        ),
+        (
+            crate::keys::SHIPPED_MACOS_KEYS,
+            "v0.1.13-keys.macos.json",
+            include_str!("../../defaults/keys.macos.json"),
+        ),
     ] {
         let kept = std::fs::read_to_string(root.join("src/keys/shipped").join(name))
             .unwrap_or_else(|e| panic!("{name}: {e}"));
         assert!(
             originals.contains(&kept.as_str()),
             "{name} must be kept as a shipped original, or untouched installs never get the update"
+        );
+        // load_text migrates a file only when it is *not* the defaults already:
+        // an original equal to the defaults matches nobody's installed file.
+        assert!(
+            kept != defaults,
+            "{name} must be the previous release's bytes, not the current defaults: an original equal to the defaults migrates nobody"
         );
     }
 }
