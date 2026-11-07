@@ -173,7 +173,7 @@ export default class Menu {
         } else this.choose(it);
       })
       .child(lead)
-      .child(div().flex_1().min_w(0).truncate().child(label(it.label, { bold: it.bold, noAccess: it.noAccess })))
+      .child(div().flex_1().min_w(0).child(label(it.label, { bold: it.bold, noAccess: it.noAccess })))
       .when(Boolean(it.badge), (el) => el.child(div().flex_none().pl(u(6)).child(icon(u, it.badge, 9))))
       .when(Boolean(it.shortcut), (el) => el.child(div().flex_none().pl(u(16)).child(it.shortcut)))
       .child(

@@ -1085,14 +1085,38 @@ fn the_win98_desktops_list_shows_every_workspace_with_its_state(cx: &mut TestApp
     for name in ["Local", "Remote", "Idle local", "Stuck"] {
         assert!(tree.contains(name), "{name} must be listed: {tree}");
     }
-    // A workspace on another machine gets the network folder.
-    assert!(tree.contains("netfolder-sm.svg"), "a remote workspace needs the network folder: {tree}");
-    // A local, unactive workspace gets the plain folder.
-    assert!(tree.contains("folder-sm.svg"), "a local workspace needs the folder: {tree}");
+    // A workspace on another machine gets the network folder; a local one the
+    // plain folder. The paths are qualified: "netfolder-sm.svg" contains
+    // "folder-sm.svg", so an unqualified name would pass for either.
+    assert!(tree.contains("/icons/netfolder-sm.svg"), "a remote workspace needs the network folder: {tree}");
+    assert!(tree.contains("/icons/folder-sm.svg"), "a local workspace needs the folder: {tree}");
     // Status badges.
     assert!(tree.contains("hourglass-xs.svg"), "a working workspace needs its badge: {tree}");
     assert!(tree.contains("check-badge-xs.svg"), "a done workspace needs its badge: {tree}");
     assert!(tree.contains("warn-badge-xs.svg"), "a blocked workspace needs its badge: {tree}");
+}
+
+/// A workspace on another machine gets the network folder; a local one the
+/// plain folder. Each on its own, so one row's glyph cannot answer for the
+/// other's, and the paths are qualified — "netfolder-sm.svg" contains
+/// "folder-sm.svg".
+#[gpui::test]
+fn a_win98_workspace_gets_the_folder_of_its_machine(cx: &mut TestAppContext) {
+    cx.update(gpui_shell::init);
+    let staged = Staged::new();
+    let local = win98_spaces(json!([
+        {"id":"s1","index":1,"name":"Local","folder":"/fixture/project","machine":null,"branch":null,"active":false,"status":null,"tabs":[]}
+    ]));
+    let tree = describe_with_values(cx, &staged, "mods/win98", local, None).unwrap();
+    assert!(tree.contains("/icons/folder-sm.svg"), "a local workspace needs the plain folder: {tree}");
+    assert!(!tree.contains("/icons/netfolder-sm.svg"), "a local workspace must not get the network folder: {tree}");
+
+    let remote = win98_spaces(json!([
+        {"id":"s2","index":2,"name":"Remote","folder":"/remote/project","machine":"remote","branch":null,"active":false,"status":null,"tabs":[]}
+    ]));
+    let tree = describe_with_values(cx, &staged, "mods/win98", remote, None).unwrap();
+    assert!(tree.contains("/icons/netfolder-sm.svg"), "a remote workspace needs the network folder: {tree}");
+    assert!(!tree.contains("/icons/folder-sm.svg"), "a remote workspace must not get the plain folder: {tree}");
 }
 
 #[gpui::test]
@@ -1148,18 +1172,39 @@ fn a_win98_workspace_with_a_long_path_name_is_shortened(cx: &mut TestAppContext)
 fn the_win98_taskbar_shows_the_desktops_switcher(cx: &mut TestAppContext) {
     cx.update(gpui_shell::init);
     let staged = Staged::new();
+    // The active workspace is named for this test alone: the fixture's agents
+    // live in "Local", so the button's name has to be a word nothing else in
+    // the tree says.
+    let mut values = fixture(true, json!({"role":"taskbar"}), updates("current", "current"));
+    values.insert(
+        "spaces".into(),
+        json!([
+            {"id":"s1","index":1,"name":"Desk-Alpha","folder":"/fixture/project","machine":null,"branch":"main","active":true,"status":"working","tabs":[]}
+        ]),
+    );
+    let tree = describe_with_values(cx, &staged, "mods/win98", values, None).unwrap();
+    assert!(tree.contains("w98-desktops"), "the switcher button is missing: {tree}");
+    assert!(tree.contains("tray-desktops"), "the notification-area icon is missing: {tree}");
+    assert!(tree.contains("mods/win98/icons/desktops-sm.svg"), "the tray icon is not drawn: {tree}");
+    assert!(tree.contains("Desk-Alpha"), "the button must name the current desktop: {tree}");
+}
+
+/// The desktops switcher must not change how any other Win98 menu looks, so
+/// the shared row label is not truncated: a menu is sized from its longest
+/// label, and gpui would clip the text without drawing an ellipsis anyway.
+#[gpui::test]
+fn a_win98_menu_row_does_not_truncate_its_label(cx: &mut TestAppContext) {
+    cx.update(gpui_shell::init);
+    let staged = Staged::new();
     let tree = describe(
         cx,
         &staged,
         "mods/win98",
         true,
-        json!({"role":"taskbar"}),
+        json!({"role":"menu","overlay":"o1","parents":[],"items":[{"label":"proj-a"},{"label":"proj-b"}]}),
         updates("current","current"),
         None,
     )
     .unwrap();
-    assert!(tree.contains("w98-desktops"), "the switcher button is missing: {tree}");
-    assert!(tree.contains("tray-desktops"), "the notification-area icon is missing: {tree}");
-    assert!(tree.contains("mods/win98/icons/desktops-sm.svg"), "the tray icon is not drawn: {tree}");
-    assert!(tree.contains("Local"), "the button must name the current desktop: {tree}");
+    assert_eq!(tree.matches("truncate").count(), 0, "a menu row must not truncate its label: {tree}");
 }
