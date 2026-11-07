@@ -10,11 +10,16 @@ The bundled fonts load with this mod; no system installation is needed.
 Pixelated MS Sans Serif (from 98.css) for the UI, PxPlus IBM
 VGA 8x16 (int10h.org, CC BY-SA 4.0) for terminals.
 
-Keys (`keys.json`, section `layout:win98`): `win98.start` (Ctrl+Esc),
-`win98.taskman` (Ctrl+Shift+Esc), `win98.new_tab`, `win98.new_space`,
-`win98.rename_tab`, `win98.rename_space`; also `run`, `shutdown`, `about`,
-`display`, `welcome`, `boot`, `mines`, `sol`, `mycomputer`, `network`,
-`bin`, `datetime`, `logoff`, `small_fonts`, `large_fonts`.
+Keys (`keys.json`, section `layout:win98`): Ctrl+Esc opens the Start menu
+(`win98.start`), Ctrl+Shift+Esc the Task Manager (`win98.taskman`), F1 the
+welcome screen (`win98.welcome`), F3 Run (`win98.run`), F4 Display
+Properties (`win98.display`), F5 Shut Down (`win98.shutdown`), F6 Log Off
+(`win98.logoff`), F7 the date and time (`win98.datetime`), F8 Mines
+(`win98.mines`), F9 Solitaire (`win98.sol`), F10 My Computer
+(`win98.mycomputer`), F11 the small fonts (`win98.small_fonts`) and F12 the
+large ones (`win98.large_fonts`). The other commands (new tab, new space,
+rename, close) keep the app's global chords; the Start menu and the
+taskbar's tab and space menus still reach them.
 
 The taskbar carries a virtual-desktop switcher: the button beside Start and
 the icon in the notification area both open the same list, above the control

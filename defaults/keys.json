@@ -70,5 +70,20 @@
     "ctrl-v": "terminal.paste_image",
     "ctrl-insert": "terminal.copy",
     "shift-insert": "terminal.paste"
+  },
+  "layout:win98": {
+    "ctrl-escape": "win98.start",
+    "ctrl-shift-escape": "win98.taskman",
+    "f1": "win98.welcome",
+    "f3": "win98.run",
+    "f4": "win98.display",
+    "f5": "win98.shutdown",
+    "f6": "win98.logoff",
+    "f7": "win98.datetime",
+    "f8": "win98.mines",
+    "f9": "win98.sol",
+    "f10": "win98.mycomputer",
+    "f11": "win98.small_fonts",
+    "f12": "win98.large_fonts"
   }
 }

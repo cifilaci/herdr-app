@@ -941,7 +941,22 @@ fn shipped_layouts_and_keys() {
         layouts.insert(path.file_stem().unwrap().to_str().unwrap().to_owned());
     }
     assert_eq!(layouts, crate::window::shipped_layouts().into_iter().map(str::to_owned).collect());
-    let mod_commands = ["ribbon.next"];
+    let mod_commands = [
+        "ribbon.next",
+        "win98.start",
+        "win98.taskman",
+        "win98.welcome",
+        "win98.run",
+        "win98.display",
+        "win98.shutdown",
+        "win98.logoff",
+        "win98.datetime",
+        "win98.mines",
+        "win98.sol",
+        "win98.mycomputer",
+        "win98.small_fonts",
+        "win98.large_fonts",
+    ];
     for text in [
         include_str!("../../defaults/keys.json"),
         include_str!("../../defaults/keys.macos.json"),
@@ -971,6 +986,23 @@ fn shipped_layouts_and_keys() {
                 );
             }
         }
+    }
+    // A change to the shipped keys only reaches installed users when the file
+    // they have is one of the kept originals. The originals are the *previous*
+    // release's bytes (src/keys/shipped/), not the defaults this change edits —
+    // load_text replaces a user's file with the new defaults only when it is
+    // byte-identical to an original.
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    for (originals, name) in [
+        (crate::keys::SHIPPED_KEYS, "v0.1.13-keys.json"),
+        (crate::keys::SHIPPED_MACOS_KEYS, "v0.1.13-keys.macos.json"),
+    ] {
+        let kept = std::fs::read_to_string(root.join("src/keys/shipped").join(name))
+            .unwrap_or_else(|e| panic!("{name}: {e}"));
+        assert!(
+            originals.contains(&kept.as_str()),
+            "{name} must be kept as a shipped original, or untouched installs never get the update"
+        );
     }
 }
 
