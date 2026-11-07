@@ -8,7 +8,7 @@ import { h_flex, v_flex } from "gpui-base";
 import { spaces, panes, agents, run, shared, setShared, nextCommand, exec, layouts, home, settings, openOverlay, closeOverlay } from "herdr";
 import {
   C, ASSETS, unit, root, bevel, button, etch, grip, icon, programIcon, sfx, apps, setApp, label, own,
-  fitLayout, openMenu, openDialog, dither, perform,
+  fitLayout, openMenu, openDialog, dither, perform, desktopItems,
 } from "./kit.js";
 
 // Agents the Start menu offers when installed: [command, name, icon].
@@ -273,6 +273,44 @@ export default class Taskbar {
     setShared("win98.start", id);
   }
 
+  // ---- the virtual desktops: one workspace is one desktop, and the list
+  // opens above the control that opened it.
+
+  openDesktops(bounds) {
+    const items = desktopItems(spaces());
+    openMenu(items, bounds ? { above: bounds } : undefined, { desktops: true, width: 280 });
+  }
+
+  desktopButton(u, s) {
+    const face = h_flex()
+      .relative()
+      .flex_1()
+      .min_w(0)
+      .h_full()
+      .items_center()
+      .gap(u(3))
+      .child(icon(u, s?.machine ? "netfolder" : "folder-open", 16))
+      .child(div().relative().flex_1().min_w(0).truncate().child(s?.name ?? ""))
+      .child(svg(`${ASSETS}/icons/arrow-down.svg`).w(u(7)).h(u(4)).text_color(C.text));
+    return button(
+      u,
+      "w98-desktops",
+      face,
+      () => this.openDesktops(this.desktopsBounds),
+      {
+        pad: [0, 3],
+        h: 22,
+        tooltip: "Virtual desktops",
+        onDown: (e) => {
+          this.desktopsBounds = e.bounds;
+        },
+      },
+    )
+      .flex_none()
+      .min_w(u(40))
+      .max_w(u(160));
+  }
+
   // ---- render
 
   tabButton(u, t, all) {
@@ -429,6 +467,20 @@ export default class Taskbar {
       .px(u(2))
       .children(icons)
       .child(
+        own(
+          div()
+            .id("tray-desktops")
+            .flex_none()
+            .tooltip("Virtual desktops")
+            .on_click(() => this.openDesktops(this.desktopsBounds))
+            .child(icon(u, "desktops", 16)),
+          // The press carries the icon's own bounds: the list opens above them.
+          (e) => {
+            this.desktopsBounds = e.bounds;
+          },
+        ),
+      )
+      .child(
         own(div().id("tray-speaker").flex_none().tooltip(mute ? "Sounds: off" : "Volume").on_click((_e, cx) => {
           setShared("win98.mute", !mute);
           cx.notify();
@@ -505,6 +557,7 @@ export default class Taskbar {
           .px(u(2))
           .gap(u(2))
           .child(start)
+          .child(this.desktopButton(u, s))
           .child(div().h(u(20)).child(etch(u, true)))
           .child(grip(u))
           .child(h_flex().flex_none().gap(u(1)).items_center().children(ql))

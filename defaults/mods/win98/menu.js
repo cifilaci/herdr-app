@@ -4,8 +4,8 @@
 
 import { div, svg, image } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { props, closeOverlay, setShared, shared } from "herdr";
-import { C, ASSETS, MENU, unit, root, bevel, label, icon, perform, openMenu, etch, scale, gradient } from "./kit.js";
+import { props, closeOverlay, setShared, shared, spaces } from "herdr";
+import { C, ASSETS, MENU, unit, root, bevel, label, icon, perform, openMenu, etch, scale, gradient, desktopItems } from "./kit.js";
 
 function openMenus() {
   return shared("win98.menus") ?? [];
@@ -53,7 +53,10 @@ export default class Menu {
   }
 
   items() {
-    return props()?.items ?? [];
+    const p = props() ?? {};
+    if (!p.desktops) return p.items ?? [];
+    const items = desktopItems(spaces());
+    return items.length ? items : [{ label: "(Empty)", disabled: true }];
   }
 
   closeAll() {
@@ -170,7 +173,7 @@ export default class Menu {
         } else this.choose(it);
       })
       .child(lead)
-      .child(div().flex_1().min_w(0).child(label(it.label, { bold: it.bold })))
+      .child(div().flex_1().min_w(0).truncate().child(label(it.label, { bold: it.bold, noAccess: it.noAccess })))
       .when(Boolean(it.badge), (el) => el.child(div().flex_none().pl(u(6)).child(icon(u, it.badge, 9))))
       .when(Boolean(it.shortcut), (el) => el.child(div().flex_none().pl(u(16)).child(it.shortcut)))
       .child(

@@ -16,6 +16,12 @@ Keys (`keys.json`, section `layout:win98`): `win98.start` (Ctrl+Esc),
 `display`, `welcome`, `boot`, `mines`, `sol`, `mycomputer`, `network`,
 `bin`, `datetime`, `logoff`, `small_fonts`, `large_fonts`.
 
+The taskbar carries a virtual-desktop switcher: the button beside Start and
+the icon in the notification area both open the same list, above the control
+that opened it. One workspace is one virtual desktop: the list is your
+workspaces, each with its agents' status (blocked, working, done), and one
+click switches to it.
+
 `art/` holds the icon, image and sound generators. Run with Bun and an
 optional output root (default: `/var/tmp/herdr98`):
 

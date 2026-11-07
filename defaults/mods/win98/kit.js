@@ -136,9 +136,15 @@ export function bevel(u, kind, content, o = {}) {
   return el;
 }
 
-/** A press of a control in a window_drag bar, or a float, is the control's. */
-export function own(el) {
-  return el.on_mouse_down("left", (_e, cx) => cx.stop_propagation());
+/**
+ * A press of a control in a window_drag bar, or a float, is the control's.
+ * onDown, when given, hears the press too: it carries the control's bounds.
+ */
+export function own(el, onDown) {
+  return el.on_mouse_down("left", (e, cx) => {
+    cx.stop_propagation();
+    onDown?.(e, cx);
+  });
 }
 
 /**
@@ -355,10 +361,15 @@ function zoom() {
  * shortcut, act: { run: [command, args], dialog, app, ... }, sub: [items],
  * disabled, checked, radio, bold, sep: true }]. at: window px, or
  * { above: bounds } (the Start menu, over its button). Returns its overlay id.
+ * o.desktops: the menu builds its own rows (the virtual desktops), so it gets
+ * the flag instead of the items; the items still size it.
  */
 export function openMenu(items, at, o = {}) {
   const k = scale();
-  const { w, h } = menuSize(items, o.start);
+  // The desktops menu draws its own rows and always shows at least one, so
+  // size it for that row when the list it was given is empty.
+  const rows = o.desktops && !items.length ? [{ label: "(Empty)" }] : items;
+  const { w, h } = menuSize(rows, o.start);
   const width = o.width ?? w;
   let where = at;
   if (at?.above) where = { x: at.above.x, y: Math.max(0, at.above.y - h * k) };
@@ -369,8 +380,35 @@ export function openMenu(items, at, o = {}) {
     width: (width * k) / zoom(),
     height: (h * k) / zoom(),
     ...(where ? { at: where } : {}),
-    props: { role: "menu", items, parents: o.parents ?? [], start: Boolean(o.start), owner: o.owner ?? null },
+    props: {
+      role: "menu",
+      ...(o.desktops ? { desktops: true } : { items }),
+      parents: o.parents ?? [],
+      start: Boolean(o.start),
+      owner: o.owner ?? null,
+    },
   });
+}
+
+/** A workspace's name, short enough for a menu row. */
+const MAX_NAME = 27;
+
+/** The workspaces as Win98 virtual desktops: the rows of the switcher's menu. */
+export function desktopItems(all) {
+  return (all ?? []).map((s) => ({
+    label: s.name.length > MAX_NAME ? `${s.name.slice(0, MAX_NAME)}...` : s.name,
+    // A workspace name has no access key; an "&" in it is an ampersand.
+    noAccess: true,
+    ...(s.active ? { radio: true } : { icon: s.machine ? "netfolder" : "folder" }),
+    ...(s.status === "blocked"
+      ? { badge: "warn-badge" }
+      : s.status === "working"
+        ? { badge: "hourglass" }
+        : s.status === "done"
+          ? { badge: "check-badge" }
+          : {}),
+    act: { run: ["space.select", { id: s.id }] },
+  }));
 }
 
 const DIALOG_W = { prompt: 340, confirm: 330, run: 350, shutdown: 330, about: 380, taskman: 360, display: 400, mycomputer: 420, bin: 380, message: 330, network: 380, welcome: 560, logoff: 300, datetime: 330 };

@@ -177,6 +177,18 @@ fn module(values: BTreeMap<String, Value>, calls: Rc<RefCell<Calls>>) -> HostMod
                 "exec" if first == "sh" && a.get(1).map(from_host).and_then(|v| v.get(2).cloned()) == Some(json!("files")) => {
                     Some(json!({"code":0,"stdout":"d\u{0}src\u{0}f\u{0}README.md\u{0}","stderr":""}))
                 }
+                // The win98 taskbar probes the machine for installed agents and for the
+                // app's age. Both are optional; an empty reply is the "nothing found" answer.
+                // The match is deliberately narrow: another mod's probe (machine-add's
+                // "uname; command -v herdr-core ...") must not be swallowed by it.
+                "exec" if first == "sh"
+                    && a.get(1).map(from_host).and_then(|v| v.get(1).cloned())
+                        .and_then(|v| v.as_str().map(String::from))
+                        .is_some_and(|s| s.starts_with("ps -o etime=")
+                            || (s.starts_with("for c in ") && s.contains("command -v"))) =>
+                {
+                    Some(json!({"code":0,"stdout":"","stderr":""}))
+                }
                 "exec"
                     if first == "git"
                         && [
@@ -1042,4 +1054,112 @@ fn a_win98_menu_row_shows_its_badge(cx: &mut TestAppContext) {
     )
     .unwrap();
     assert!(!without.contains("warn-badge"), "a menu without badges must not gain one: {without}");
+}
+
+// The mod picks its role from props().role (main.js), so the fixture's props
+// must select the menu role — the generic props() helper has no role and the
+// mod would render "win98: no role" instead of a menu. The "desktops" flag is
+// what puts the menu role in its virtual-desktop mode (the taskbar opens that
+// menu with openMenu(..., {desktops: true})), so the fixture carries it too.
+fn win98_spaces(list: Value) -> BTreeMap<String, Value> {
+    let mut values = fixture(
+        true,
+        json!({"role": "menu", "overlay": "o1", "parents": [], "desktops": true}),
+        updates("current", "current"),
+    );
+    values.insert("spaces".into(), list);
+    values
+}
+
+#[gpui::test]
+fn the_win98_desktops_list_shows_every_workspace_with_its_state(cx: &mut TestAppContext) {
+    cx.update(gpui_shell::init);
+    let staged = Staged::new();
+    let values = win98_spaces(json!([
+        {"id":"s1","index":1,"name":"Local","folder":"/fixture/project","machine":null,"branch":"main","active":true,"status":"working","tabs":[]},
+        {"id":"s2","index":2,"name":"Remote","folder":"/remote/project","machine":"remote","branch":null,"active":false,"status":"done","tabs":[]},
+        {"id":"s3","index":3,"name":"Idle local","folder":"/fixture/other","machine":null,"branch":null,"active":false,"status":"idle","tabs":[]},
+        {"id":"s4","index":4,"name":"Stuck","folder":"/fixture/stuck","machine":null,"branch":null,"active":false,"status":"blocked","tabs":[]}
+    ]));
+    let tree = describe_with_values(cx, &staged, "mods/win98", values, None).unwrap();
+    for name in ["Local", "Remote", "Idle local", "Stuck"] {
+        assert!(tree.contains(name), "{name} must be listed: {tree}");
+    }
+    // A workspace on another machine gets the network folder.
+    assert!(tree.contains("netfolder-sm.svg"), "a remote workspace needs the network folder: {tree}");
+    // A local, unactive workspace gets the plain folder.
+    assert!(tree.contains("folder-sm.svg"), "a local workspace needs the folder: {tree}");
+    // Status badges.
+    assert!(tree.contains("hourglass-xs.svg"), "a working workspace needs its badge: {tree}");
+    assert!(tree.contains("check-badge-xs.svg"), "a done workspace needs its badge: {tree}");
+    assert!(tree.contains("warn-badge-xs.svg"), "a blocked workspace needs its badge: {tree}");
+}
+
+#[gpui::test]
+fn the_win98_desktops_list_ticks_the_active_workspace_and_draws_no_icon_for_it(cx: &mut TestAppContext) {
+    cx.update(gpui_shell::init);
+    let staged = Staged::new();
+    let values = win98_spaces(json!([
+        {"id":"s1","index":1,"name":"Local","folder":"/fixture/project","machine":null,"branch":"main","active":true,"status":"working","tabs":[]}
+    ]));
+    let tree = describe_with_values(cx, &staged, "mods/win98", values, None).unwrap();
+    assert!(!tree.contains("folder-sm.svg"), "the ticked row must not also draw an icon: {tree}");
+    assert!(!tree.contains("netfolder-sm.svg"), "the ticked row must not also draw an icon: {tree}");
+}
+
+#[gpui::test]
+fn a_win98_workspace_with_no_agents_shows_no_badge(cx: &mut TestAppContext) {
+    cx.update(gpui_shell::init);
+    let staged = Staged::new();
+    let values = win98_spaces(json!([
+        {"id":"s1","index":1,"name":"Quiet","folder":"/fixture/project","machine":null,"branch":"main","active":true,"status":null,"tabs":[]}
+    ]));
+    let tree = describe_with_values(cx, &staged, "mods/win98", values, None).unwrap();
+    for badge in ["warn-badge", "hourglass", "check-badge"] {
+        assert!(!tree.contains(badge), "{badge} must not be drawn for a workspace with no agents: {tree}");
+    }
+}
+
+#[gpui::test]
+fn the_win98_desktops_list_says_so_when_there_are_no_workspaces(cx: &mut TestAppContext) {
+    cx.update(gpui_shell::init);
+    let staged = Staged::new();
+    let values = win98_spaces(json!([]));
+    let tree = describe_with_values(cx, &staged, "mods/win98", values, None).unwrap();
+    assert!(tree.contains("(Empty)"), "an empty list must say so: {tree}");
+}
+
+#[gpui::test]
+fn a_win98_workspace_with_a_long_path_name_is_shortened(cx: &mut TestAppContext) {
+    cx.update(gpui_shell::init);
+    let staged = Staged::new();
+    let long = "/home/someone/very/deeply/nested/projects/another-long-name";
+    let values = win98_spaces(json!([
+        {"id":"s1","index":1,"name":long,"folder":"/fixture/project","machine":null,"branch":"main","active":true,"status":null,"tabs":[]}
+    ]));
+    let tree = describe_with_values(cx, &staged, "mods/win98", values, None).unwrap();
+    assert!(
+        tree.contains(&format!("{}...", &long[..27])),
+        "a long name must be shortened to 27 characters and three dots: {tree}"
+    );
+}
+
+#[gpui::test]
+fn the_win98_taskbar_shows_the_desktops_switcher(cx: &mut TestAppContext) {
+    cx.update(gpui_shell::init);
+    let staged = Staged::new();
+    let tree = describe(
+        cx,
+        &staged,
+        "mods/win98",
+        true,
+        json!({"role":"taskbar"}),
+        updates("current","current"),
+        None,
+    )
+    .unwrap();
+    assert!(tree.contains("w98-desktops"), "the switcher button is missing: {tree}");
+    assert!(tree.contains("tray-desktops"), "the notification-area icon is missing: {tree}");
+    assert!(tree.contains("mods/win98/icons/desktops-sm.svg"), "the tray icon is not drawn: {tree}");
+    assert!(tree.contains("Local"), "the button must name the current desktop: {tree}");
 }
