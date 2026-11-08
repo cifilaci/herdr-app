@@ -358,8 +358,10 @@ function zoom() {
 
 /**
  * Opens a Win98 popup menu (the menu role). items: [{ label: "&New", icon,
- * shortcut, act: { run: [command, args], dialog, app, ... }, sub: [items],
- * disabled, checked, radio, bold, sep: true }]. at: window px, or
+ * shortcut, badge: "warn-badge", act: { run: [command, args], dialog, app, ... },
+ * sub: [items], disabled, checked, radio, bold, sep: true }]. badge is an icon
+ * name drawn in the row's own slot (e.g. "warn-badge", "hourglass",
+ * "check-badge"); no other item carries one. at: window px, or
  * { above: bounds } (the Start menu, over its button). Returns its overlay id.
  * o.desktops: the menu builds its own rows (the virtual desktops), so it gets
  * the flag instead of the items; the items still size it.

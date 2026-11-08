@@ -56,7 +56,7 @@ impl Drop for Staged {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct Calls {
     unexpected: Vec<String>,
     effects: Vec<(String, Vec<Value>)>,
@@ -382,6 +382,18 @@ fn describe_with_values(
     values: BTreeMap<String, Value>,
     setup: Option<&str>,
 ) -> anyhow::Result<String> {
+    describe_with_calls(cx, staged, entry, values, setup).map(|(tree, _)| tree)
+}
+
+/// The same, and it hands back the host calls the mod made: a test can then
+/// assert on what the mod asked the app to do, not only on how it drew.
+fn describe_with_calls(
+    cx: &mut TestAppContext,
+    staged: &Staged,
+    entry: &str,
+    values: BTreeMap<String, Value>,
+    setup: Option<&str>,
+) -> anyhow::Result<(String, Calls)> {
     let calls = Rc::new(RefCell::new(Calls::default()));
     static NEXT_STORE: AtomicU64 = AtomicU64::new(0);
     let policy = Policy::new()
@@ -391,7 +403,7 @@ fn describe_with_values(
     let runtime = ShellRuntime::new_isolated()?;
     let root = setup.map(|s| staged.wrapper(entry, s)).unwrap_or_else(|| staged.0.join(entry));
     let window = cx.add_window(|_, _| Empty);
-    let result = window.update(cx, |_, window, cx| {
+    let result: anyhow::Result<String> = window.update(cx, |_, window, cx| {
         let mut session = DescriptionSession::load(runtime, root, policy, window, cx)?;
         let first = session.describe(window, cx)?;
         let second = session.describe(window, cx)?;
@@ -403,7 +415,7 @@ fn describe_with_values(
     // staged folder is still there, or they recreate it after its drop.
     cx.run_until_parked();
     assert!(calls.borrow().unexpected.is_empty(), "{entry}: {:?}", calls.borrow().unexpected);
-    result
+    Ok((result?, calls.borrow().clone()))
 }
 
 fn props() -> Value {
@@ -1188,6 +1200,53 @@ fn a_win98_workspace_with_no_agents_shows_no_badge(cx: &mut TestAppContext) {
     for badge in ["warn-badge", "hourglass", "check-badge"] {
         assert!(!tree.contains(badge), "{badge} must not be drawn for a workspace with no agents: {tree}");
     }
+}
+
+/// A workspace name has no access key: an "&" in it is an ampersand, and
+/// nothing is underlined. The menu must not treat it as an accelerator. A
+/// real access key still picks its item — the control that shows the
+/// accelerator works at all.
+#[gpui::test]
+fn a_win98_workspace_name_is_not_an_access_key(cx: &mut TestAppContext) {
+    cx.update(gpui_shell::init);
+    let staged = Staged::new();
+    let values = win98_spaces(json!([
+        {"id":"s1","index":1,"name":"R&D","folder":"/fixture/project","machine":null,"branch":null,"active":true,"status":null,"tabs":[]}
+    ]));
+    let (_tree, calls) = describe_with_calls(
+        cx,
+        &staged,
+        "mods/win98",
+        values,
+        Some("this.role.key({key:'d', key_char:'d'}, cx);"),
+    )
+    .unwrap();
+    assert!(
+        !calls.effects.iter().any(|(name, _)| name == "run" || name == "closeOverlay"),
+        "a workspace name has no access key, so \"d\" must not pick it: {:?}",
+        calls.effects
+    );
+
+    let mut values = fixture(
+        true,
+        json!({"role":"menu","overlay":"o1","parents":[],"items":[{"label":"&Open","act":{"run":["tab.select",{"id":"t1"}]}}]}),
+        updates("current", "current"),
+    );
+    values.insert("spaces".into(), json!([]));
+    let (_tree, calls) = describe_with_calls(
+        cx,
+        &staged,
+        "mods/win98",
+        values,
+        Some("this.role.key({key:'o', key_char:'o'}, cx);"),
+    )
+    .unwrap();
+    assert!(
+        calls.effects.iter().any(|(name, args)| name == "run"
+            && args.first().and_then(|v| v.as_str()) == Some("tab.select")),
+        "an access key must still pick its item: {:?}",
+        calls.effects
+    );
 }
 
 #[gpui::test]

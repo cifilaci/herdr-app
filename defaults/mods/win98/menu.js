@@ -123,9 +123,10 @@ export default class Menu {
         else this.choose(items[this.at]);
         break;
       default: {
-        // An access key picks its item.
+        // An access key picks its item. A row with noAccess (a workspace name)
+        // has none: an "&" in it is an ampersand.
         const ch = (e.key_char ?? e.key ?? "").toLowerCase();
-        const i = items.findIndex((it) => !it.sep && (it.label ?? "").toLowerCase().includes("&" + ch));
+        const i = items.findIndex((it) => !it.sep && !it.noAccess && (it.label ?? "").toLowerCase().includes("&" + ch));
         if (i < 0) return;
         this.at = i;
         if (items[i].sub) this.openSub(i, null);
@@ -174,8 +175,8 @@ export default class Menu {
       })
       .child(lead)
       .child(div().flex_1().min_w(0).child(label(it.label, { bold: it.bold, noAccess: it.noAccess })))
-      .when(Boolean(it.badge), (el) => el.child(div().flex_none().pl(u(6)).child(icon(u, it.badge, 9))))
       .when(Boolean(it.shortcut), (el) => el.child(div().flex_none().pl(u(16)).child(it.shortcut)))
+      .when(Boolean(it.badge), (el) => el.child(div().flex_none().pl(u(6)).child(icon(u, it.badge, 9))))
       .child(
         div()
           .w(u(start ? 16 : 18))
